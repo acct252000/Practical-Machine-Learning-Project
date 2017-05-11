@@ -1,0 +1,80 @@
+---
+title: "Practical Machine Learning Project"
+author: "Christine the Statistics Student"
+date: "May 10, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exploratory Analysis
+```{r}
+weightTraining<-read.csv("pml-training.csv", header=TRUE)
+weightTesting<-read.csv("pml-testing.csv", header=TRUE)
+```
+
+Preliminary review of the data indicates that these are exercises performed over time, and the time passed seems to be factored in the num_window column, therefore timestamp and date columns will not be used.  Additionally, there are many columns that are mostly or wholly NA.  We first remove all columns that are over 50% na and then create training and tesing sets.
+
+```{r}
+weightTraining<-weightTraining[lapply( weightTraining, function(x) sum(is.na(x)) / length(x) ) < 0.5 ]
+weightTraining<-weightTraining[,6:93]
+library(caret)
+inTrain = createDataPartition(weightTraining$classe,p=3/4)[[1]]
+training = weightTraining[inTrain,]
+testing = weightTraining[-inTrain,]
+```
+
+## How I Built the Model
+As explained in the lectures we start winnowing the field by removing all variables with a near zero variance = TRUE from the nearZeroVar function.
+```{r}
+nzv<-nearZeroVar(training,saveMetrics=TRUE)
+training<-training[,-which(nzv$nzv)]
+```
+
+
+Lastly we center our data and do a pca with a threshold of 80%.
+```{r}
+preObj<-preProcess(training[,-54],method=c("center","scale","pca"),threshold=0.8)
+trainPC<-predict(preObj,training[,-54])
+```
+
+Our first attempt will be a random forest. 
+
+```{r}
+modelFit<-train(training$classe~.,method="rf",data=trainPC)
+```
+
+## How I Used Cross Validation
+
+I used the holdout method above by splitting the data into training and test sets.  we now run the model against the test set.
+
+```{r}
+testing<-testing[,-which(nzv$nzv)]
+testingPC<-predict(preObj,testing[,-54])
+confusionMatrix(testing$classe,predict(modelFit,testingPC))
+
+
+
+```
+
+Based on our Confusion Matrix accuracy, we are happy with this model.
+
+##Expected Out of Sample Error
+
+As noted above, the Accuracy of this model is 97.65% with a confidence interval of 97.19% to 98.06%.
+
+##Predict 20 Items
+
+We predicted 20 items from the original test set below.
+
+```{r}
+#Predict 20 from testing
+wTestingPredictors<-weightTesting[,colnames(training)[1:53]]
+finalPC<-predict(preObj,wTestingPredictors)
+finalPredictions<-predict(modelFit,finalPC)
+finalPredictions
+
+```
+
