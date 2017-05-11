@@ -63,7 +63,7 @@ Based on our Confusion Matrix accuracy, we are happy with this model.
 
 ##Expected Out of Sample Error
 
-As noted above, the Accuracy of this model is 97.65% with a confidence interval of 97.19% to 98.06%.
+As noted above, the Accuracy of this model is 97.65% (error 2.35%) with a confidence interval of 97.19% to 98.06%.
 
 ##Predict 20 Items
 
